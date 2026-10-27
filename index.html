@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="MVP simple para pedidos, recepción de facturas y pagos."
+    />
+    <title>Depósito · Pedidos y pagos</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Operaciones</p>
+          <h1>Depósito <span>·</span> Pedidos y pagos</h1>
+          <p class="subtitle">
+            Un flujo corto para pedir, recibir con factura y controlar pagos.
+          </p>
+        </div>
+        <div
+          class="storage-pill"
+          title="Los datos se guardan en este navegador"
+        >
+          <span class="status-dot"></span>
+          Datos locales
+        </div>
+      </header>
+
+      <nav class="view-tabs" aria-label="Vistas principales">
+        <button
+          class="tab-button is-active"
+          type="button"
+          data-view="warehouse-view"
+        >
+          Depósito
+        </button>
+        <button class="tab-button" type="button" data-view="admin-view">
+          Administración
+        </button>
+      </nav>
+
+      <section
+        id="warehouse-view"
+        class="view is-active"
+        aria-labelledby="warehouse-title"
+      >
+        <div class="view-heading">
+          <div>
+            <p class="eyebrow">Vista del encargado</p>
+            <h2 id="warehouse-title">Registrar y recibir pedidos</h2>
+          </div>
+          <div class="view-heading-actions">
+            <button
+              id="quick-purchase-button"
+              class="secondary-button quick-purchase-trigger"
+              type="button"
+            >
+              + Compra rápida
+            </button>
+            <span id="warehouse-count" class="count-badge">0 pendientes</span>
+          </div>
+        </div>
+
+        <div class="two-column">
+          <article class="card">
+            <div class="card-heading">
+              <div>
+                <p class="step-number">01</p>
+                <h3>Crear pedido</h3>
+              </div>
+              <span class="muted">Pedido nuevo</span>
+            </div>
+            <form id="order-form" class="stack-form">
+              <label>
+                Proveedor
+                <input
+                  id="order-supplier"
+                  name="supplier"
+                  list="supplier-options"
+                  required
+                  placeholder="Ej. Distribuidora Norte"
+                />
+              </label>
+              <datalist id="supplier-options"></datalist>
+              <label>
+                WhatsApp / teléfono
+                <input
+                  id="order-provider-phone"
+                  name="providerPhone"
+                  type="tel"
+                  required
+                  autocomplete="tel"
+                  placeholder="+54 9 11 1234-5678"
+                />
+                <span class="field-helper"
+                  >Incluí código de país y área para abrir WhatsApp.</span
+                >
+              </label>
+
+              <div class="field-group">
+                <div class="field-label-row">
+                  <label for="order-items">Qué se pidió</label>
+                  <button
+                    id="add-item-button"
+                    class="text-button"
+                    type="button"
+                  >
+                    + Agregar ítem
+                  </button>
+                </div>
+                <div
+                  id="order-items"
+                  class="item-list"
+                  aria-live="polite"
+                ></div>
+              </div>
+
+              <label>
+                Nota <span class="optional">(opcional)</span>
+                <textarea
+                  id="order-note"
+                  name="note"
+                  rows="2"
+                  placeholder="Entrega, condición o referencia interna"
+                ></textarea>
+              </label>
+              <button class="primary-button" type="submit">
+                Guardar pedido
+              </button>
+              <p id="order-form-message" class="form-message" role="status"></p>
+            </form>
+          </article>
+
+          <article class="card receive-card">
+            <div class="card-heading">
+              <div>
+                <p class="step-number">02</p>
+                <h3>Recepción con factura</h3>
+              </div>
+              <span class="muted">OCR económico</span>
+            </div>
+            <p class="card-intro">
+              Elegí un pedido pendiente, subí la foto o PDF y extraé proveedor,
+              número, monto e ítems con OpenRouter.
+            </p>
+            <div id="pending-orders" class="pending-orders"></div>
+            <div id="empty-pending" class="empty-state hidden">
+              <span class="empty-icon">✓</span>
+              <strong>No hay pedidos pendientes</strong>
+              <span>Los nuevos pedidos aparecerán acá.</span>
+            </div>
+          </article>
+        </div>
+
+        <article
+          id="quick-purchase-card"
+          class="card quick-purchase-card hidden"
+        >
+          <div class="card-heading">
+            <div>
+              <p class="step-number">DIRECTA</p>
+              <h3>Compra rápida / factura directa</h3>
+            </div>
+            <button
+              id="close-quick-purchase-button"
+              class="icon-button"
+              type="button"
+              aria-label="Cerrar compra rápida"
+            >
+              ×
+            </button>
+          </div>
+          <p class="card-intro">
+            Subí la factura sin crear un pedido previo. La compra quedará
+            entregada y disponible para auditar y pagar desde Administración.
+          </p>
+          <label class="direct-provider-hint">
+            Proveedor conocido
+            <span class="optional">(opcional, ayuda al OCR)</span>
+            <input
+              id="direct-provider-hint"
+              list="supplier-options"
+              placeholder="Podés indicarlo antes de subir la factura"
+            />
+          </label>
+          <div class="quick-purchase-actions">
+            <label class="file-input-wrap">
+              Foto o PDF de factura
+              <input
+                id="direct-invoice-file"
+                type="file"
+                accept="image/*,application/pdf"
+              />
+            </label>
+            <button
+              id="direct-ocr-button"
+              class="secondary-button"
+              type="button"
+            >
+              Extraer con OCR
+            </button>
+          </div>
+          <button id="direct-manual-button" class="text-button" type="button">
+            Completar factura manualmente
+          </button>
+          <div id="direct-purchase-form"></div>
+        </article>
+
+        <article class="card ocr-settings-card">
+          <div class="card-heading compact-heading">
+            <div>
+              <p class="eyebrow">Configuración opcional</p>
+              <h3>OCR de factura</h3>
+            </div>
+            <span class="muted">La clave queda en este navegador</span>
+          </div>
+          <div class="settings-grid">
+            <label>
+              API key de OpenRouter
+              <input
+                id="openrouter-key"
+                type="password"
+                autocomplete="off"
+                placeholder="sk-or-v1-…"
+              />
+            </label>
+            <label>
+              Modelo para OCR
+              <input
+                id="openrouter-model"
+                value="google/gemma-3-4b-it"
+                placeholder="proveedor/modelo"
+              />
+            </label>
+            <label>
+              Base URL (solo clave local)
+              <input
+                id="openrouter-base-url"
+                value="https://openrouter.ai/api/v1"
+                inputmode="url"
+              />
+            </label>
+          </div>
+          <p class="helper-text">
+            En Vercel, la clave se mantiene en el servidor mediante
+            <code>OPENROUTER_API_KEY</code>. Si ejecutás localmente sin variable
+            de entorno, podés ingresar una clave solo para esa sesión o
+            completar la factura manualmente.
+          </p>
+        </article>
+      </section>
+
+      <section id="admin-view" class="view" aria-labelledby="admin-title">
+        <div class="view-heading">
+          <div>
+            <p class="eyebrow">Vista de administración</p>
+            <h2 id="admin-title">Control de entregas y pagos</h2>
+          </div>
+          <button id="export-button" class="secondary-button" type="button">
+            Exportar datos
+          </button>
+        </div>
+
+        <div id="admin-metrics" class="metrics-grid"></div>
+
+        <article class="card table-card">
+          <div class="table-toolbar">
+            <div>
+              <h3>Pedidos entregados</h3>
+              <p class="muted">
+                Cada fila concentra pedido, factura y estado financiero.
+              </p>
+            </div>
+            <div class="admin-filters">
+              <label class="provider-filter-field">
+                <span class="sr-only">Filtrar proveedor</span>
+                <select id="admin-provider-filter">
+                  <option value="">Todos los proveedores</option>
+                </select>
+              </label>
+              <label class="search-field">
+                <span class="sr-only"
+                  >Buscar por proveedor, factura o producto</span
+                >
+                <input
+                  id="admin-search"
+                  type="search"
+                  placeholder="Proveedor, factura o producto"
+                />
+              </label>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Pedido</th>
+                  <th>Proveedor</th>
+                  <th>Factura</th>
+                  <th>Importe</th>
+                  <th>Estado financiero</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody id="admin-table-body"></tbody>
+            </table>
+          </div>
+          <div id="empty-admin" class="empty-state hidden">
+            <span class="empty-icon">⌁</span>
+            <strong>Todavía no hay entregas</strong>
+            <span>Confirmá una recepción desde la vista de Depósito.</span>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <dialog id="payment-dialog" class="payment-dialog">
+      <form id="payment-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">Gestión de pagos</p>
+            <h3 id="payment-dialog-title">Registrar pago</h3>
+          </div>
+          <button
+            id="close-dialog-button"
+            class="icon-button"
+            type="button"
+            aria-label="Cerrar"
+          >
+            ×
+          </button>
+        </div>
+        <p id="payment-summary" class="payment-summary"></p>
+        <div class="payment-progress" aria-label="Progreso de pago">
+          <span id="payment-progress-bar"></span>
+        </div>
+        <div id="payment-history" class="payment-history"></div>
+        <div class="payment-options">
+          <label class="choice-card">
+            <input type="radio" name="payment-mode" value="cash" checked />
+            <span
+              ><strong>Contado</strong
+              ><small>Pagada en el momento de recibirla.</small></span
+            >
+          </label>
+          <label class="choice-card">
+            <input type="radio" name="payment-mode" value="account" />
+            <span
+              ><strong>Cuenta corriente</strong
+              ><small
+                >Permite pagos parciales o dejar saldo pendiente.</small
+              ></span
+            >
+          </label>
+        </div>
+        <div id="partial-payment-fields" class="partial-payment-fields hidden">
+          <label>
+            Importe de este pago
+            <input
+              id="payment-amount"
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="0,00"
+            />
+          </label>
+          <div class="payment-shortcuts">
+            <button
+              class="text-button"
+              type="button"
+              data-payment-shortcut="balance"
+            >
+              Pagar saldo completo
+            </button>
+            <button
+              class="text-button secondary-text-button"
+              type="button"
+              data-payment-shortcut="clear"
+            >
+              Limpiar
+            </button>
+          </div>
+          <p id="payment-balance" class="helper-text"></p>
+        </div>
+        <label>
+          Nota <span class="optional">(opcional)</span>
+          <input
+            id="payment-note"
+            type="text"
+            placeholder="Ej. transferencia 1234"
+          />
+        </label>
+        <p id="payment-message" class="form-message" role="status"></p>
+        <div class="dialog-actions">
+          <button
+            id="cancel-dialog-button"
+            class="secondary-button"
+            type="button"
+          >
+            Cancelar
+          </button>
+          <button class="primary-button" type="submit">Guardar pago</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="provider-dialog" class="provider-dialog">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">Ficha de proveedor</p>
+          <h3 id="provider-dialog-title">Proveedor</h3>
+          <p id="provider-dialog-meta" class="invoice-dialog-meta"></p>
+        </div>
+        <button
+          id="close-provider-button"
+          class="icon-button"
+          type="button"
+          aria-label="Cerrar"
+        >
+          ×
+        </button>
+      </div>
+      <div
+        id="provider-financial-summary"
+        class="provider-financial-summary"
+      ></div>
+      <div class="provider-detail-grid">
+        <section>
+          <div class="section-heading">
+            <h4>Facturas</h4>
+            <span class="muted">Auditoría y pagos</span>
+          </div>
+          <div id="provider-invoices-list" class="provider-list"></div>
+        </section>
+        <section>
+          <div class="section-heading">
+            <h4>Pedidos</h4>
+            <span class="muted">Historial del proveedor</span>
+          </div>
+          <div id="provider-orders-list" class="provider-list"></div>
+        </section>
+      </div>
+      <div class="dialog-actions">
+        <button
+          id="cancel-provider-button"
+          class="secondary-button"
+          type="button"
+        >
+          Cerrar
+        </button>
+      </div>
+    </dialog>
+
+    <dialog id="invoice-dialog" class="invoice-dialog">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">Auditoría de comprobante</p>
+          <h3 id="invoice-dialog-title">Factura</h3>
+        </div>
+        <button
+          id="close-invoice-button"
+          class="icon-button"
+          type="button"
+          aria-label="Cerrar"
+        >
+          ×
+        </button>
+      </div>
+      <p id="invoice-dialog-meta" class="invoice-dialog-meta"></p>
+      <div id="invoice-preview" class="invoice-preview"></div>
+      <div class="dialog-actions">
+        <button
+          id="cancel-invoice-button"
+          class="secondary-button"
+          type="button"
+        >
+          Cerrar
+        </button>
+      </div>
+    </dialog>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
