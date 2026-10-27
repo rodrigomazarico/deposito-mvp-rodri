@@ -3,6 +3,7 @@ node_modules/
 .env.*
 !.env.example
 .vercel/
+public/
 .DS_Store
 Thumbs.db
 npm-debug.log*
